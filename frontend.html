@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Toxic Comment Detector</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg: #020617;
+            --bg-soft: #020617;
+            --bg-elevated: #020617;
+            --border-subtle: #1f2937;
+            --accent: #3b82f6;
+            --accent-soft: rgba(59, 130, 246, 0.15);
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+            --danger: #dc2626;
+            --danger-soft: rgba(220, 38, 38, 0.15);
+            --success: #16a34a;
+            --success-soft: rgba(22, 163, 74, 0.15);
+            --chip-bg: #111827;
+            --radius-lg: 18px;
+            --radius-md: 999px;
+            --radius-sm: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1e293b 0, #020617 45%, #000 100%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 24px 16px;
+        }
+
+        .shell {
+            width: 100%;
+            max-width: 1100px;
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 24px;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            box-shadow:
+                0 20px 40px rgba(15, 23, 42, 0.8),
+                0 0 0 1px rgba(15, 23, 42, 0.9);
+            padding: 20px 22px 22px;
+            backdrop-filter: blur(14px);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .title-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 22px;
+            font-weight: 650;
+        }
+
+        .pill-logo {
+            width: 26px;
+            height: 26px;
+            border-radius: 10px;
+            background: radial-gradient(circle at 20% 0, #f97316, #ef4444);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 0 18px rgba(248, 113, 113, 0.4);
+        }
+
+        .subtitle {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .badge-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: var(--radius-md);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #cbd5f5;
+        }
+
+        .badge-soft {
+            background: rgba(15, 23, 42, 0.85);
+        }
+
+        .layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .card {
+            background: var(--bg-soft);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-subtle);
+            padding: 14px 16px 16px;
+        }
+
+        .card-left {
+            flex: 1.2 1 320px;
+        }
+
+        .card-right {
+            flex: 1 1 320px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .card-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            background: #020617;
+            color: var(--text-main);
+            padding: 10px 11px;
+            resize: vertical;
+            font-size: 14px;
+            line-height: 1.5;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
+        }
+
+        .input-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .char-count {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .button-row {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        button.primary {
+            padding: 8px 18px;
+            border-radius: var(--radius-md);
+            border: none;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button.primary:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        button.secondary {
+            padding: 7px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid #334155;
+            background: #020617;
+            color: var(--text-muted);
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        button.secondary:hover {
+            border-color: #4b5563;
+        }
+
+        .chip-row {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .chip {
+            font-size: 11px;
+            padding: 4px 9px;
+            border-radius: var(--radius-md);
+            background: var(--chip-bg);
+            border: 1px solid #1f2937;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .chip:hover {
+            border-color: #4b5563;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .status-clean {
+            background: var(--success-soft);
+            color: #bbf7d0;
+            border: 1px solid var(--success);
+        }
+
+        .status-toxic {
+            background: var(--danger-soft);
+            color: #fecaca;
+            border: 1px solid var(--danger);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: currentColor;
+        }
+
+        .action-box {
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: #020617;
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--text-main);
+            border: 1px dashed #334155;
+        }
+
+        .summary-line {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .labels-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .labels-table th,
+        .labels-table td {
+            border: 1px solid #1f2937;
+            padding: 6px;
+            text-align: center;
+        }
+
+        .labels-table th {
+            background: #020617;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .labels-table td.label-name {
+            text-align: left;
+            padding-left: 10px;
+        }
+
+        .labels-table td.on {
+            background: #7f1d1d;
+            color: #fecaca;
+            font-weight: 600;
+        }
+
+        .labels-table td.off {
+            background: #020617;
+            color: #4b5563;
+        }
+
+        .history-block {
+            margin-top: 10px;
+        }
+
+        .history-list {
+            margin-top: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 190px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 7px 9px;
+            border-radius: 12px;
+            background: #020617;
+            border: 1px solid #1f2937;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .history-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: var(--radius-md);
+        }
+
+        .tag-clean {
+            background: var(--success-soft);
+            color: #bbf7d0;
+        }
+
+        .tag-toxic {
+            background: var(--danger-soft);
+            color: #fecaca;
+        }
+
+        .history-text {
+            color: var(--text-muted);
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        .history-labels {
+            font-size: 10px;
+            color: #6b7280;
+        }
+
+        .no-history {
+            font-size: 12px;
+            color: #4b5563;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .shell {
+                padding: 16px 14px 18px;
+            }
+            .layout {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <div class="header">
+        <div class="title-block">
+            <div class="app-title">
+                <div class="pill-logo">⚖</div>
+                <span>Toxic Comment Detector</span>
+            </div>
+            <p class="subtitle">
+                Paste a message to classify it into:
+                <strong>toxic</strong>, <strong>severe_toxic</strong>, <strong>obscene</strong>,
+                <strong>threat</strong>, <strong>insult</strong>, <strong>identity_hate</strong>.
+            </p>
+        </div>
+        <div class="badge-row">
+            <span class="badge badge-soft">LogReg · TF-IDF</span>
+            <span class="badge badge-soft">Multi-label</span>
+        </div>
+    </div>
+
+    <div class="layout">
+        <!-- LEFT: INPUT -->
+        <div class="card card-left">
+            <div class="card-header">
+                <div class="card-title">Comment input</div>
+                <div class="card-hint">Everything runs locally on your machine.</div>
+            </div>
+
+            <textarea id="inputText" placeholder="Type or paste a comment here to check if it is toxic..."></textarea>
+
+            <div class="input-footer">
+                <span>Press <strong>Ctrl + Enter</strong> to submit</span>
+                <span class="char-count"><span id="charCount">0</span> characters</span>
+            </div>
+
+            <div class="button-row">
+                <button class="primary" id="checkBtn" onclick="sendText()">
+                    <span id="btnLabel">Check toxicity</span>
+                </button>
+                <button class="secondary" type="button" onclick="clearInput()">Clear</button>
+            </div>
+
+            <div class="chip-row">
+                <span class="chip" onclick="setSample('I really enjoyed your video, nice work!')">Clean example</span>
+                <span class="chip" onclick="setSample('You are a stupid idiot')">Insult</span>
+                <span class="chip" onclick="setSample('I will kill you if you come here again')">Threat</span>
+                <span class="chip" onclick="setSample('I want to see you naked')">Sexual</span>
+                <span class="chip" onclick="setSample('People from your country are disgusting')">Identity hate</span>
+            </div>
+        </div>
+
+        <!-- RIGHT: RESULT + HISTORY -->
+        <div class="card card-right">
+            <div class="card-header">
+                <div class="card-title">Result</div>
+                <div class="card-hint">Model decision & label breakdown.</div>
+            </div>
+
+            <div id="result">
+                <p class="summary-line">
+                    No comment analysed yet. Type something on the left and click <strong>Check toxicity</strong>.
+                </p>
+            </div>
+
+            <div class="history-block">
+                <div class="card-header" style="margin-top: 8px;">
+                    <div class="card-title">Recent checks</div>
+                    <div class="card-hint">Last 5 comments</div>
+                </div>
+                <div id="historyList" class="history-list">
+                    <div class="no-history">No history yet. Your last 5 checks will appear here.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const historyItems = [];
+    const MAX_HISTORY = 5;
+
+    const inputEl = document.getElementById("inputText");
+    const countEl = document.getElementById("charCount");
+    const btn = document.getElementById("checkBtn");
+    const btnLabel = document.getElementById("btnLabel");
+    const resultDiv = document.getElementById("result");
+    const historyList = document.getElementById("historyList");
+
+    // Update char count
+    inputEl.addEventListener("input", () => {
+        countEl.textContent = inputEl.value.length;
+    });
+
+    // Ctrl+Enter to submit
+    inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.ctrlKey) {
+            e.preventDefault();
+            sendText();
+        }
+    });
+
+    function setSample(text) {
+        inputEl.value = text;
+        countEl.textContent = text.length;
+        inputEl.focus();
+    }
+
+    function clearInput() {
+        inputEl.value = "";
+        countEl.textContent = 0;
+        inputEl.focus();
+    }
+
+    async function sendText() {
+        const text = inputEl.value.trim();
+        if (!text) {
+            alert("Please enter some text first.");
+            return;
+        }
+
+        btn.disabled = true;
+        btnLabel.textContent = "Checking...";
+
+        try {
+            const resp = await fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ text })
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                resultDiv.innerHTML = `<p style="color:#f87171;font-size:13px;">Error: ${data.error || "Unknown error"}</p>`;
+                return;
+            }
+
+            renderResult(data);
+            addToHistory(data);
+
+        } catch (err) {
+            console.error(err);
+            resultDiv.innerHTML = `<p style="color:#f87171;font-size:13px;">Request failed. Check console.</p>`;
+        } finally {
+            btn.disabled = false;
+            btnLabel.textContent = "Check toxicity";
+        }
+    }
+
+    function renderResult(data) {
+        const status = data.status || "CLEAN";
+        const details = data.details || {};
+        const action = data.action || "";
+        const isToxic = status === "TOXIC";
+
+        const pillClass = isToxic ? "status-pill status-toxic" : "status-pill status-clean";
+        const pillText = isToxic ? "TOXIC" : "CLEAN";
+
+        const labels = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"];
+        const activeLabels = labels.filter(label => details[label] === 1);
+
+        const summary = buildSummaryLine(isToxic, activeLabels);
+
+        let tableRows = "";
+        labels.forEach(label => {
+            const v = details[label] || 0;
+            const cellClass = v ? "on" : "off";
+            tableRows += `
+                <tr>
+                    <td class="label-name">${label}</td>
+                    <td class="${cellClass}">${v}</td>
+                </tr>
+            `;
+        });
+
+        resultDiv.innerHTML = `
+            <div class="${pillClass}">
+                <span class="status-dot"></span>
+                <span>${pillText}</span>
+            </div>
+            <div class="summary-line">${summary}</div>
+            <div class="action-box">
+                <strong>System action:</strong><br>${escapeHtml(action)}
+            </div>
+            <table class="labels-table">
+                <thead>
+                    <tr>
+                        <th>Label</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function buildSummaryLine(isToxic, activeLabels) {
+        if (!isToxic || activeLabels.length === 0) {
+            return "This comment is considered <strong>non-toxic</strong> by the model.";
+        }
+
+        const niceNames = {
+            toxic: "toxic",
+            severe_toxic: "severely toxic",
+            obscene: "obscene",
+            threat: "threatening",
+            insult: "insulting",
+            identity_hate: "identity-based hate"
+        };
+
+        const readable = activeLabels.map(l => niceNames[l] || l);
+
+        let labelText = "";
+        if (readable.length === 1) {
+            labelText = readable[0];
+        } else if (readable.length === 2) {
+            labelText = readable.join(" and ");
+        } else {
+            labelText = readable.slice(0, -1).join(", ") + " and " + readable[readable.length - 1];
+        }
+
+        return `This comment is classified as <strong>toxic</strong>, mainly for being <strong>${labelText}</strong>.`;
+    }
+
+    function addToHistory(data) {
+        const status = data.status || "CLEAN";
+        const text = data.original_text || "";
+        const details = data.details || {};
+        const isToxic = status === "TOXIC";
+
+        historyItems.unshift({ status, text, details });
+
+        if (historyItems.length > MAX_HISTORY) {
+            historyItems.pop();
+        }
+
+        if (historyItems.length === 0) {
+            historyList.innerHTML = `<div class="no-history">No history yet. Your last 5 checks will appear here.</div>`;
+            return;
+        }
+
+        historyList.innerHTML = historyItems.map(item => {
+            const tagClass = item.status === "TOXIC" ? "tag tag-toxic" : "tag tag-clean";
+            const labelSummary = buildHistoryLabelSummary(item.details || {});
+            return `
+                <div class="history-item">
+                    <div class="history-top-row">
+                        <span class="${tagClass}">${item.status}</span>
+                        <span class="history-text" title="${escapeHtml(item.text)}">${escapeHtml(item.text)}</span>
+                    </div>
+                    <div class="history-labels">${labelSummary}</div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    function buildHistoryLabelSummary(details) {
+        const labels = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"];
+        const active = labels.filter(l => details[l] === 1);
+        if (active.length === 0) return "Labels: none";
+        return "Labels: " + active.join(", ");
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, function (m) {
+            return ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[m];
+        });
+    }
+</script>
+</body>
+</html>
